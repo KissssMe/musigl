@@ -66,9 +66,9 @@ def SAMP(r:bytes)->Poly:
     random.seed(r)
     b = Poly(np.zeros(N))
     sigma_b = compute_sigma_b()
-    seed_value = r
+    seed_value = int.from_bytes(r, 'big')%(2**32-1)  # 将字节对象转换为整数
     np.random.seed(seed_value)
-    samples = math.floor(abs(np.random.normal(0, sigma_b, N)))
+    samples = np.floor(np.abs(np.random.normal(0, sigma_b, N)))
     for _ in range(N):
         b.coef[_] = samples[_]
     return b

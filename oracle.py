@@ -3,8 +3,9 @@ import hashlib
 import math
 import random
 from params import *
+from numpy.polynomial import Polynomial as Poly
 
-def H_agg(input_data) :
+def H_agg(input_data):
     seed=0
     for i in range(1):
         count=0
@@ -15,11 +16,12 @@ def H_agg(input_data) :
             i=h%N
             h//=N
             if(out[i]!=1 or out[i]!=-1):
+                random.seed(seed)
                 out[i]=random.choice([-1,1])
                 count+=1
             if(count==kappa):
-                #out_poly=Poly([i for i in out])
-                return out
+                out_poly=Poly([i for i in out])
+                return out_poly
         seed+=1
 
 def H_sig(input_data) :
@@ -36,9 +38,9 @@ def H_sig(input_data) :
                 out[i]=random.choice([-1,1])
                 count+=1
             if(count==kappa):
-                #out_poly=Poly([i for i in out])
-                return out
-        seed+=1
+                out_poly=Poly([i for i in out])
+                return out_poly
+            seed+=1
 
 
 def H_non(input_bytes: bytes, output_length: int) -> bytes:
@@ -53,8 +55,10 @@ def H_non(input_bytes: bytes, output_length: int) -> bytes:
         return (hash_bytes * (output_length // len(hash_bytes) + 1))[:output_length]
 
 if __name__=="__main__":
-    a=b'0000000000001111111111'
-    b=b'0000000000001111111111'
-    c=H_non(a,l)
-    d=H_non(b,l)
-    print(c,d)
+    a=b'00156465564651234897563211'
+    b=b'00156465564651234897563211'
+    c=H_agg(a)
+    d=H_agg(b)
+    print(c)
+    print(d)
+    print(c==d)

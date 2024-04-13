@@ -3,6 +3,7 @@ from typing import List
 
 import numpy as np
 from numpy.polynomial import Polynomial as Poly
+from numpy.polynomial.polynomial import polydiv
 
 from params import *
 
@@ -62,17 +63,24 @@ def ring_sum(a: Poly, b: Poly, mod: int) -> Poly:
 
 #对的
 def ring_mul(a: Poly, b: Poly, mod: int) -> Poly:
+    if not isinstance(a, Poly) or not isinstance(b, Poly):
+        raise TypeError("输入必须是Polynomial对象")
     cyclotomics = Poly([1] + [0] * (N - 1) + [1])
-    result = a * b % cyclotomics
-    result.coef = [coef % mod for coef in result.coef]
-    return result
+    mul=a*b
+    #_, r = polydiv(mul.coef, cyclotomics.coef)
+    r_=Poly(mul.coef)%Poly(cyclotomics.coef)
+    r=r_.coef
+    result = [coef % mod for coef in r]
+    return Poly(result)
 
 #对的
 def ring_vec_ring_mul(ring_vec: List[Poly], ring: Poly, mod: int) -> List[Poly]:
     result_ring_vec = []
     for i in range(len(ring_vec)):
         poly_factor = ring_mul(ring_vec[i], ring, mod)
-        poly_factor.coef %= mod
+        for i in range(len(poly_factor.coef)):
+            poly_factor.coef[i] %= mod
+        #poly_factor.coef %= mod
         result_ring_vec.append(poly_factor)
     return result_ring_vec
 
@@ -216,7 +224,7 @@ def vec_vec_mul(a: List[Poly], b: List[Poly]) -> Poly:
 
 
 def poly_to_bytes(poly: Poly) -> bytes:
-    coef_bytes = poly.coef.tobytes()
+    coef_bytes = np.array(poly.coef).tobytes()
     return coef_bytes
 
 def bytes_to_poly(bytes_obj: bytes) -> Poly:
@@ -227,8 +235,6 @@ def bytes_to_poly(bytes_obj: bytes) -> Poly:
 
 if __name__=="__main__":
     p = Poly([1, 2, 3, 4])
-    print(p)
-    b=poly_to_bytes(p)
-    c=bytes_to_poly(b)
+    a=Poly([1,2,3,4])
+    b=ring_mul(p,a,Q)
     print(b)
-    print(c)

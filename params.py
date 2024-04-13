@@ -7,9 +7,9 @@ GAMMA = 13.6
 l = 14 #矩阵的维数
 k = 14 #矩阵的维数
 POLY_BYTES = int((14 * N) / 8)
-kappa = 256
+kappa = 20
 eta = 5
-m = 1 #这是啥？
+m = 3 #这是啥？
 n = 3 # 用户数量
 
 # import math

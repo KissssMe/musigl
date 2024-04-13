@@ -108,12 +108,24 @@ def key_agg_coeff(key_set: List[Poly], public_key: Poly) -> Poly:
     #print(coefficient)
     return coefficient
 
-def concatenate_l(list,a1:bytes,a2=Poly([0])):
+def concatenate_l(list:list[list[Poly]],a2=Poly([0]),a1=b''):
     res=b''
     for i in range(n):
-        res+=poly_to_bytes(list[i])
+        for j in range(len(list[i])):
+            res+=poly_to_bytes(list[i][j])
     res+=a1
-    res+=poly_to_bytes(a2)
+    for i in range(len(a2)):
+        res+=poly_to_bytes(a2[i])
+    return res
+
+def concatenate_W(list,a2=Poly([0]),a1=''):
+    res=b''
+    for i in range(n):
+        for j in range(len(list[i][0])):
+            res+=poly_to_bytes(list[i][0][j])
+    res+=a1.encode()
+    for i in range(len(a2)):
+        res+=poly_to_bytes(a2[i])
     return res
 
 def split_bytes(r_, m):
@@ -126,15 +138,15 @@ def split_bytes(r_, m):
 ########## MUSIGL FUNCTIONS ##########
 # keyagg函数
 def aggregate_public_keys(public_key_list: List[Poly]) -> Poly:
-    aggregate_key = Poly([0] * N)
+    aggregate_key = [Poly([0 for _ in range(N)])]*len(public_key_list[0])
     for t_i in public_key_list:
-        a_i = key_agg_coeff(public_key_list, t_i)
+        a_i = H_agg(concatenate_l(public_key_list, t_i))
         #print(a_i)
         #print(t_i)
-        a_i_pk = ring_mul(a_i, t_i, Q)
+        a_i_pk = ring_vec_ring_mul(t_i,a_i,Q)
         #print(a_i_pk)
-        aggregate_key = ring_sum(aggregate_key, a_i_pk, Q)
-        print(aggregate_key)
+        aggregate_key = ring_vec_ring_vec_sum(aggregate_key, a_i_pk, Q)
+        #print(aggregate_key)
     return aggregate_key
 
 
@@ -148,10 +160,10 @@ def aggregate(ones:list[(list[Poly], list[Poly])])->tuple[list[Poly], list[Poly]
     return (ones[0][1], sum)
 
 
-def sign_off(sk1 : Poly,pk1 : Poly):
+def sign_off(sk1 : list[Poly],pk1 : list[Poly]):
     y1_1 = []
     for i in range(l+k):
-        y1_1.append(Poly[np.random.normal(0, sigma_1, N)])
+        y1_1.append(Poly(np.random.normal(0, sigma_1, N)))
     s1 = sk1
     y1 = []
     w1 = []
@@ -159,7 +171,7 @@ def sign_off(sk1 : Poly,pk1 : Poly):
     for i in range(1, m):  #索引都是从0开始的！！！
         y1_i = []
         for j in range(l+k):
-            y1_i.append(Poly[np.random.normal(0, sigma_y, N)])
+            y1_i.append(Poly(np.random.normal(0, sigma_y, N)))
         y1.append(y1_i)
 
     for j in range(0, m):
@@ -197,6 +209,7 @@ def sign_online(st1,sk1,msgs,miu,pk_list):
             return None
         if ti[i]==pk_list[0]:
             return None
+    com[0]=st1[m]
         
     L = ti.copy() 
     L[0] = pk_list[0] #加入t1
@@ -206,7 +219,7 @@ def sign_online(st1,sk1,msgs,miu,pk_list):
     #question:聚合方式是一个一个还是一群一群
     W = msgs.copy() 
     W.insert(0, (pk_list[0], st1[m]))
-    r_=H_non(concatenate_l(W,miu,t_))    #r为字节列表
+    r_=H_non(concatenate_W(W,t_,miu),512)    #r为字节列表
     r=split_bytes(r_,m-1)
 
     b=[Poly([0])]*(m-1)
@@ -217,11 +230,11 @@ def sign_online(st1,sk1,msgs,miu,pk_list):
     for j in range(m):
         for k in range(n):
             w[j]=ring_sum(w[j],com[k][j],Q)
-    
+
     w_=ring_vec_ring_vec_mul(b,w,Q)
     y1=st1.copy()[:m]
     y1_=ring_vec_ring_vec_mul(b,y1,Q)
-    c=H_sig(concatenate_l(w_,miu,t_))
+    c=H_sig(concatenate_l(w_,t_,miu))
     v=ring_mul(ring_mul(c,a1,Q),sk1,Q)
     z1=ring_sum(v,y1_,Q)
     if RejSamp(v,z1,b)==0:
@@ -261,7 +274,10 @@ def verify_sig(aggregate_pk_bytes: Poly, msg: bytes, sig_bytes: bytes) -> bool:
 # print(aggregate_public_keys([a, a]))
     
 if __name__=="__main__":
-    A_=Setup(0)
     pk1,sk1=Gen()
-    
+    pk2,sk2=Gen()
+    pk3,sk3=Gen()
+    print(pk1)
+    print(pk2)
+    print(pk3)
 
