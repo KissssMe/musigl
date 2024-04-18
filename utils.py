@@ -67,9 +67,9 @@ def ring_mul(a: Poly, b: Poly, mod: int) -> Poly:
         raise TypeError("输入必须是Polynomial对象")
     cyclotomics = Poly([1] + [0] * (N - 1) + [1])
     mul=a*b
-    #_, r = polydiv(mul.coef, cyclotomics.coef)
-    r_=Poly(mul.coef)%Poly(cyclotomics.coef)
-    r=r_.coef
+    _, r = polydiv(mul.coef, cyclotomics.coef)
+    # r_=Poly(mul.coef)%Poly(cyclotomics.coef)
+    # r=r_.coef
     result = [coef % mod for coef in r]
     return Poly(result)
 
@@ -108,6 +108,12 @@ def ring_vec_ring_vec_sum(a: List[Poly], b: List[Poly], mod: int) -> List[Poly]:
     res = []
     for i in range(len(a)):
         res.append(ring_sum(a[i], b[i], mod))
+    return res
+
+def ring_vec_ring_vec_sub(a: List[Poly], b: List[Poly], mod: int) -> List[Poly]:
+    res = []
+    for i in range(len(a)):
+        res.append(ring_sum(a[i], -b[i], mod))
     return res
 
 #对的
@@ -228,13 +234,16 @@ def poly_to_bytes(poly: Poly) -> bytes:
     return coef_bytes
 
 def bytes_to_poly(bytes_obj: bytes) -> Poly:
+    remainder = len(bytes_obj) % 8
+    if remainder:  # if the bytes_obj is not a multiple of 8
+        bytes_obj = bytes_obj[:-remainder]  # remove the extra bytes
     coef = np.frombuffer(bytes_obj, dtype=np.float64)
     poly = Poly(coef)
     return poly
 
 
 if __name__=="__main__":
-    p = Poly([1, 2, 3, 4])
-    a=Poly([1,2,3,4])
-    b=ring_mul(p,a,Q)
-    print(b)
+    p = [Poly([1, 2, 3, 4])]*3
+    a=[Poly([2,1,3,4])]*3
+    b=ring_vec_ring_vec_sub(p,a,Q)
+    print(b[0].coef)

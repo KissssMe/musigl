@@ -128,6 +128,15 @@ def concatenate_W(list,a2=Poly([0]),a1=''):
         res+=poly_to_bytes(a2[i])
     return res
 
+def concatenate_c(list:list[Poly],a2:list[Poly],a1=''):
+    res=b''
+    for i in range(len(list)):
+        res+=poly_to_bytes(list[i])
+    res+=a1.encode()
+    for i in range(len(a2)):
+        res+=poly_to_bytes(a2[i])
+    return res
+
 def split_bytes(r_, m):
     length = len(r_)
     size = length // m
@@ -156,7 +165,7 @@ def aggregate(ones:list[(list[Poly], list[Poly])])->tuple[list[Poly], list[Poly]
             return False
     sum = [Poly([0 for _ in range(N)])]*n
     for _ in range(n):
-        sum = vec_vec_mul(sum, ones[_][0])
+        sum = ring_vec_ring_vec_sum(sum, ones[_][0],Q)
     return (ones[0][1], sum)
 
 
@@ -231,12 +240,16 @@ def sign_online(st1,sk1,msgs,miu,pk_list):
         for k in range(n):
             w[j]=ring_sum(w[j],com[k][j],Q)
 
-    w_=ring_vec_ring_vec_mul(b,w,Q)
-    y1=st1.copy()[:m]
-    y1_=ring_vec_ring_vec_mul(b,y1,Q)
-    c=H_sig(concatenate_l(w_,t_,miu))
-    v=ring_mul(ring_mul(c,a1,Q),sk1,Q)
-    z1=ring_sum(v,y1_,Q)
+    #w_=ring_vec_ring_vec_mul(b,w,Q)
+    w_=[Poly([1])]*N    #因bug先弄为定值，后期记得改
+    y1= list(st1[0:m])
+
+    y1_=[Poly([0])]*N
+    for i in range(1,m):
+        y1_= ring_vec_ring_vec_sum(ring_vec_ring_mul(y1[i],b[i],Q),y1_,Q)
+    c= H_sig(concatenate_c(w_,t_,miu))
+    v= ring_vec_ring_mul(sk1,ring_mul(c,a1,Q),Q)
+    z1= ring_vec_ring_vec_sum(v,y1_,Q)
     if RejSamp(v,z1,b)==0:
         z1=None
     on1=(z1,w_)
@@ -252,13 +265,12 @@ def concatenate_msgs(msgs):
     return concatenated_msgs
 
 
-def verify_sig(aggregate_pk_bytes: Poly, msg: bytes, sig_bytes: bytes) -> bool:
-    sig = bytes_to_poly(sig_bytes)
-    w, z = sig
-    t = bytes_to_poly(aggregate_pk_bytes)
-    c = Hagg(w + msg + t)
-    left = ring_vec_ring_vec_sum(ring_mat_ring_vec_mul(A_, z, Q), -ring_mul(c, t, Q), Q)
-    right = w
+def verify_sig(aggregate_pk_bytes: list[Poly], sig, message) -> bool:
+    w_, z = sig
+    t_=aggregate_pk_bytes
+    c = H_sig(concatenate_c(w_, t_, message))
+    left = ring_vec_ring_vec_sub(ring_mat_ring_vec_mul(A_, z, Q), ring_vec_ring_mul(t_, c, Q), Q)
+    right = w_
 
     B = sigma_1*math.sqrt(N*(l+k))
     B_n = B*math.sqrt(n)

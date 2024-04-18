@@ -84,7 +84,7 @@ def RejSamp(v:list[Poly], z:list[Poly], B:list[Poly])->bool:
         sum += np.matmul(coef,coef)
 
     diag_element_1 = (sigma_y**2) * sum + sigma_1**2
-    Sigma = np.diag([diag_element_1] * k+l)
+    Sigma = np.diag([diag_element_1] * (k+l))
 
     rho = random.randint(0, 1)
     
@@ -96,9 +96,9 @@ def RejSamp(v:list[Poly], z:list[Poly], B:list[Poly])->bool:
     M = math.e**(exponent_M)
 
     diag_element_2 = sigma_1**2
-    Sigma_mal = np.diag([diag_element_2] * k+l)
+    Sigma_mal = np.diag([diag_element_2] * (k+l))
     origin = Poly([0] * N)
-
+    return 1 #后期格确定了记得删掉
     if rho < min([compute_D(Sigma_mal,[origin]*len(z) , Lambda, z)/(M*compute_D(Sigma, v, Lambda, z)), 1]):
         # Lambda 是一个格，还没有确定
         return 1
